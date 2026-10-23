@@ -1,0 +1,12 @@
+/* Additions for the React version (everything else is the original style.css) */
+
+/* Blank page while the content loads, then the sections fade up as before */
+.page-loading { min-height: 100vh; }
+
+.page-message {
+  max-width: 640px;
+  margin: 20vh auto;
+  padding: 0 16px;
+  text-align: center;
+  font-family: "Manrope", sans-serif;
+}
