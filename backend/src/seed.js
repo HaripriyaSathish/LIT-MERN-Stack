@@ -6,7 +6,7 @@
 import bcrypt from "bcryptjs";
 import dotenv from "dotenv";
 import mysql from "mysql2/promise";
-import { sequelize } from "./config/db.js";
+import { dialect, sequelize } from "./config/db.js";
 import { resources } from "./config/schema.js";
 import { models, Admin, upgradeTables } from "./models/index.js";
 import content from "./data/content.js";
@@ -62,6 +62,17 @@ async function seed() {
       for (const [slug, date] of Object.entries(PAGE_DATES)) {
         await sequelize.query("UPDATE info_pages SET updated_at = ? WHERE slug = ?", { replacements: [date, slug] });
       }
+    }
+  }
+
+  // PostgreSQL (Neon): rows were inserted with fixed ids, so move each id counter
+  // past the highest id - otherwise the first "+ Add" in the admin fails with "duplicate key".
+  if (dialect === "postgres") {
+    for (const key of keys) {
+      const table = resources[key].table;
+      await sequelize.query(
+        `SELECT setval(pg_get_serial_sequence('"${table}"', 'id'), COALESCE((SELECT MAX(id) FROM "${table}"), 0) + 1, false)`
+      );
     }
   }
 

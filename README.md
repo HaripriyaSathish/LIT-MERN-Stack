@@ -7,7 +7,7 @@ design and animations** as the live site, plus an admin panel where **every sect
 |---|---|
 | Frontend | React 19 + Vite, React Router, lucide-react icons |
 | Backend | Node.js + Express 5, JWT login |
-| Database | MySQL (Sequelize ORM) |
+| Database | MySQL locally (MySQL Workbench) · Neon PostgreSQL in production (Sequelize ORM) |
 | Images | Cloudinary (or `backend/uploads` when Cloudinary is not set) |
 
 ```
@@ -128,16 +128,27 @@ Admin requests need `Authorization: Bearer <token>` (the token from login).
 
 ---
 
-## Deploy (e.g. Render)
+## Deploy (Render + Neon PostgreSQL)
 
-**Database** – a hosted MySQL (Aiven, TiDB Cloud, Railway...). Set `DATABASE_URL=mysql://user:pass@host:port/db`
-(and `DB_SSL=true` if the provider requires SSL).
+The same code runs on MySQL (local) and PostgreSQL (Neon): when `DATABASE_URL` starts with
+`postgresql://` the backend uses PostgreSQL with SSL automatically.
 
-**Backend → Web Service** – root `backend`, build `npm install`, start `npm start`.
-Env: everything from `.env` + `DATABASE_URL`, `CLIENT_URL=https://<frontend-domain>`,
-Cloudinary keys (server disks are wiped on redeploy), `GOOGLE_ANALYTICS_ID=G-CJ4EXSJEQD`.
-Run `npm run seed` once from the service shell.
+**1. Fill the Neon database once (from your PC, PowerShell, in `backend/`):**
+```powershell
+$env:DATABASE_URL="postgresql://USER:PASSWORD@ep-xxxx-pooler.REGION.aws.neon.tech/neondb?sslmode=verify-full"
+$env:ADMIN_PASSWORD="<strong production password>"
+npm run seed
+```
+Close that PowerShell window afterwards (so local runs use MySQL again).
 
-**Frontend → Static Site** – root `frontend`, build `npm install && npm run build`, publish `dist`.
-Env: `VITE_API_URL=https://<backend-domain>/api`.
-`public/_redirects` makes `/admin` and `/privacy-policy/` work on refresh.
+**2. Backend → Render Web Service** – root `backend`, build `npm install`, start `npm start`.
+Env: `DATABASE_URL` (Neon), `JWT_SECRET`, `JWT_EXPIRES_IN=1d`, `CLIENT_URL=https://<frontend>.onrender.com`,
+`BASE_URL=https://<backend>.onrender.com`, Cloudinary keys (Render's disk is wiped on redeploy),
+SMTP settings, `GOOGLE_ANALYTICS_ID=G-CJ4EXSJEQD`.
+
+**3. Frontend → Render Static Site** – root `frontend`, build `npm install && npm run build`, publish `dist`.
+Env: `VITE_API_URL=https://<backend>.onrender.com/api`.
+Add a Redirects/Rewrites rule `/*` → `/index.html` (Rewrite) so `/admin` and `/privacy-policy/` work on refresh.
+
+**JWT_SECRET** – any long random text. Generate one with:
+`node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"`
