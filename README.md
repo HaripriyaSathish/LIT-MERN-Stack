@@ -141,14 +141,16 @@ npm run seed
 ```
 Close that PowerShell window afterwards (so local runs use MySQL again).
 
-**2. Backend → Render Web Service** – root `backend`, build `npm install`, start `npm start`.
-Env: `DATABASE_URL` (Neon), `JWT_SECRET`, `JWT_EXPIRES_IN=1d`, `CLIENT_URL=https://<frontend>.onrender.com`,
-`BASE_URL=https://<backend>.onrender.com`, Cloudinary keys (Render's disk is wiped on redeploy),
-SMTP settings, `GOOGLE_ANALYTICS_ID=G-CJ4EXSJEQD`.
+**2. One Render Web Service for website + admin + API** (Express serves the built React app):
+- Root Directory: *(empty)*
+- Build Command: `cd frontend && npm install --include=dev && npm run build && cd ../backend && npm install`
+- Start Command: `cd backend && npm start`
+- Env: `NODE_VERSION=22`, `DATABASE_URL` (Neon), `JWT_SECRET`, `JWT_EXPIRES_IN=1d`,
+  `CLIENT_URL` and `BASE_URL` = `https://<service>.onrender.com`, Cloudinary keys (Render's disk is wiped on redeploy),
+  SMTP settings, `GOOGLE_ANALYTICS_ID=G-CJ4EXSJEQD`. No `VITE_API_URL` needed (same address → `/api`).
 
-**3. Frontend → Render Static Site** – root `frontend`, build `npm install && npm run build`, publish `dist`.
-Env: `VITE_API_URL=https://<backend>.onrender.com/api`.
-Add a Redirects/Rewrites rule `/*` → `/index.html` (Rewrite) so `/admin` and `/privacy-policy/` work on refresh.
+(Two separate services also work: backend Web Service with root `backend`, plus a Static Site with root `frontend`,
+`VITE_API_URL=https://<backend>/api` and a rewrite rule `/*` → `/index.html`.)
 
 **JWT_SECRET** – any long random text. Generate one with:
 `node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"`
